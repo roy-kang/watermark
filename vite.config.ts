@@ -23,7 +23,7 @@ export default defineConfig({
     lib: {
       entry: './lib/main.ts',
       name: 'Watermark',
-      formats: ['es', 'umd', 'iife'],
+      formats: ['es', 'umd'],
       fileName: format => `index.${format}.js`
     }
   }
