@@ -31,7 +31,7 @@ export type Options = RequiredGroup<{
   // canvas插入类型
   type?: 'absolute' | 'fixed'
   // 绘制文本
-  content: string
+  content?: string
   // 文本绘制的最大宽度
   maxWidth?: number
   // 图片
@@ -60,7 +60,7 @@ export type Options = RequiredGroup<{
   // Y 轴起始点
   startY?: number
   // 自定义填充方法
-  print?: ((ctx: CanvasRenderingContext2D) => void) | null
+  print?: ((ctx: CanvasRenderingContext2D, option: Options) => void) | null
 }, 'content', 'image'>
 
 type InnerProps = {
@@ -75,14 +75,14 @@ const defaultProps: Required<Omit<Options, 'content' | 'image'>> = {
   type: 'fixed',
   maxWidth: -1,
   imageOptions: {},
-  font: '18px Arial',
+  font: '14px Arial',
   foreColor: 'rgba(0, 0, 0)',
-  rotate: -40,
-  axisX: 200,
-  axisY: 100,
+  rotate: 330,
+  axisX: 260,
+  axisY: 150,
   opacity: 0.1,
   startX: 20,
-  startY: -50,
+  startY: 50,
   print: null
 }
 
@@ -119,7 +119,7 @@ const createCanvas = (parentElement: HTMLElement, options: InnerProps & { opacit
  * @param img 图片
  */
 const printImageOrText = (ctx: CanvasRenderingContext2D, options: Required<Options> & InnerProps, img?: HTMLImageElement) => {
-  const { width, height, content, rotate, axisX, axisY, startX, startY, maxWidth, imageOptions, print } = options
+  const { width, height, content, foreColor, rotate, axisX, axisY, startX, startY, maxWidth, imageOptions, print } = options
 
   const angle = Math.PI / 180 * rotate
 
@@ -128,8 +128,9 @@ const printImageOrText = (ctx: CanvasRenderingContext2D, options: Required<Optio
       ctx.save()
       ctx.translate(x, y)
       ctx.rotate(angle)
+      ctx.fillStyle = foreColor
       if (print) {
-        print(ctx)
+        print(ctx, options)
       } else {
         if (content) {
           ctx.fillText(content, 0, 0, maxWidth < 0 ? undefined : maxWidth)
@@ -212,10 +213,15 @@ const updateCanvas = (
  * 启动水印功能
  * @param options 配置属性
  */
-export function setupWatermark(options: Options) {
+export default function setupWatermark(options: Options) {
   const target = options.target || document.body
-  const peWidth = target.offsetWidth
-  const peHeight = target.offsetHeight
+  let peWidth = window.innerWidth
+  let peHeight = window.innerHeight
+
+  if (options.type === 'absolute') {
+    peWidth = target.offsetWidth
+    peHeight = target.offsetHeight
+  }
 
   const actualOptions = Object.assign({}, defaultProps, options) as PartialGroup<Options, 'content', 'image'>
 
@@ -250,17 +256,11 @@ export function setupWatermark(options: Options) {
   robserver.observe(target)
 
   return {
-    updateByText(content: string) {
-      if (canvas && content) {
-        allProps.content = content
-        allProps.image = ''
-        canvasObserver = updateCanvas(canvas, target, allProps, canvasObserver)
-      }
-    },
-    updateByImage(image: string) {
-      if (canvas && image) {
-        allProps.image = image
+    update(updateOptions: Options) {
+      if (canvas && updateOptions) {
         allProps.content = ''
+        allProps.image = ''
+        Object.assign(allProps, updateOptions)
         canvasObserver = updateCanvas(canvas, target, allProps, canvasObserver)
       }
     },

@@ -1,5 +1,5 @@
 import './style.css'
-import { setupWatermark } from '../lib/main'
+import setupWatermark from '../lib/main'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
@@ -7,7 +7,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <div class="card">
       <button id="counter" type="button">btn</button>
       <button id="update" type="button">update</button>
-      <button id="updateImg" type="button">img</button>
     </div>
     <p class="read-the-docs">
       Click on the Vite and TypeScript logos to learn more
@@ -18,12 +17,14 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 let cnt = 0
 let watermark = setupWatermark({
   content: 'watermark',
-  // image: 'https://img.alicdn.com/imgextra/i2/O1CN01FF1t1g1Q3PDWpSm4b_!!6000000001920-55-tps-508-135.svg',
-  imageOptions: {
-    width: 100,
-    height: 30
-  },
-  rotate: 320
+  print(ctx, option) {
+    if (cnt++ & 1) {
+      ctx.fillStyle = 'red'
+    } else {
+      ctx.fillStyle = 'blue'
+    }
+    ctx.fillText(option.content!, 0, 0)
+  }
 })
 
 document.getElementById('counter')!.onclick = () => {
@@ -35,15 +36,20 @@ document.getElementById('counter')!.onclick = () => {
       width: 100,
       height: 30
     },
+    foreColor: 'green',
     rotate: 320
   })
 }
 
 document.getElementById('update')!.onclick = () => {
   cnt++
-  watermark.updateByText('abc - ' + cnt)
-}
-
-document.getElementById('updateImg')!.onclick = () => {
-  watermark.updateByImage('https://img.alicdn.com/imgextra/i2/O1CN01FF1t1g1Q3PDWpSm4b_!!6000000001920-55-tps-508-135.svg')
+  if (cnt & 1) {
+    watermark.update({
+      content: 'abc - ' + cnt
+    })
+  } else {
+    watermark.update({
+      image: 'https://img.alicdn.com/imgextra/i2/O1CN01FF1t1g1Q3PDWpSm4b_!!6000000001920-55-tps-508-135.svg'
+    })
+  }
 }

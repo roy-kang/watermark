@@ -10,7 +10,7 @@ type RequiredGroup<T, M extends keyof T, N extends keyof T> = {
 export type Options = RequiredGroup<{
     target?: HTMLElement;
     type?: 'absolute' | 'fixed';
-    content: string;
+    content?: string;
     maxWidth?: number;
     image?: string;
     imageOptions?: {
@@ -25,15 +25,14 @@ export type Options = RequiredGroup<{
     opacity?: number;
     startX?: number;
     startY?: number;
-    print?: ((ctx: CanvasRenderingContext2D) => void) | null;
+    print?: ((ctx: CanvasRenderingContext2D, option: Options) => void) | null;
 }, 'content', 'image'>;
 /**
  * 启动水印功能
  * @param options 配置属性
  */
-export declare function setupWatermark(options: Options): {
-    updateByText(content: string): void;
-    updateByImage(image: string): void;
+export default function setupWatermark(options: Options): {
+    update(updateOptions: Options): void;
     destory(): void;
 };
 export {};
