@@ -2,28 +2,12 @@ import ResizeObserver from 'resize-observer-polyfill'
 import { throttle } from 'lodash-es'
 
 type RequiredGroup<T, M extends keyof T, N extends keyof T> =
-  {
-    [P in M]-?: T[P]
-  } & {
-    [P in keyof Exclude<T, M>]?: P extends keyof T ? T[P] : never
-  } |
-  {
-    [P in N]-?: T[P]
-  } & {
-    [P in keyof Exclude<T, N>]?: P extends keyof T ? T[P] : never
-  }
+  Required<Pick<T, M>> & Partial<Omit<T, M>> |
+  Required<Pick<T, N>> & Partial<Omit<T, N>>
 
 type PartialGroup<T, M extends keyof T, N extends keyof T> =
-  {
-    [P in M]?: T[P]
-  } & {
-    [P in keyof Exclude<T, M>]-?: P extends keyof T ? T[P] : never
-  } |
-  {
-    [P in N]?: T[P]
-  } & {
-    [P in keyof Exclude<T, N>]-?: P extends keyof T ? T[P] : never
-  }
+  Partial<Pick<T, M>> & Required<Omit<T, M>> |
+  Partial<Pick<T, N>> & Required<Omit<T, N>>
 
 export type Options = RequiredGroup<{
   // 插入目标元素，默认 body
@@ -92,8 +76,8 @@ const defaultProps: Required<Omit<Options, 'content' | 'image'>> = {
  * @param options canvas元素的配置
  * @returns canvas
  */
-const createCanvas = (parentElement: HTMLElement, options: InnerProps & { opacity: number, type: 'absolute' | 'fixed' }) => {
-  const { width, height, opacity, type } = options
+const createCanvas = (parentElement: HTMLElement, options: InnerProps & { type: 'absolute' | 'fixed' }) => {
+  const { width, height, type } = options
 
   if (type === 'absolute') {
     const parentElementPosition = getComputedStyle(parentElement).getPropertyValue('position')
@@ -105,7 +89,7 @@ const createCanvas = (parentElement: HTMLElement, options: InnerProps & { opacit
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
-  canvas.setAttribute('style', `position: ${type}; left: 0; top: 0; z-index: 2147483647; pointer-events: none; opacity: ${opacity};`)
+  canvas.setAttribute('style', `position: ${type}; left: 0; top: 0; z-index: 2147483647; pointer-events: none;`)
 
   parentElement.appendChild(canvas)
 
@@ -118,8 +102,8 @@ const createCanvas = (parentElement: HTMLElement, options: InnerProps & { opacit
  * @param options 配置
  * @param img 图片
  */
-const printImageOrText = (ctx: CanvasRenderingContext2D, options: Required<Options> & InnerProps, img?: HTMLImageElement) => {
-  const { width, height, content, foreColor, rotate, axisX, axisY, startX, startY, maxWidth, imageOptions, print } = options
+const printImageOrText = (ctx: CanvasRenderingContext2D, options: PartialGroup<Options, 'content', 'image'> & InnerProps, img?: HTMLImageElement) => {
+  const { width, height, content, foreColor, opacity, rotate, axisX, axisY, startX, startY, maxWidth, imageOptions, print } = options
 
   const angle = Math.PI / 180 * rotate
 
@@ -129,6 +113,7 @@ const printImageOrText = (ctx: CanvasRenderingContext2D, options: Required<Optio
       ctx.translate(x, y)
       ctx.rotate(angle)
       ctx.fillStyle = foreColor
+      ctx.globalAlpha = opacity
       if (print) {
         print(ctx, options)
       } else {
@@ -150,7 +135,7 @@ const printImageOrText = (ctx: CanvasRenderingContext2D, options: Required<Optio
  * @param options canvas 配置
  * @returns MutationObserver
  */
-const printCanvas = (canvas: HTMLCanvasElement, parentElement: HTMLElement, options: Required<Options> & InnerProps) => {
+const printCanvas = (canvas: HTMLCanvasElement, parentElement: HTMLElement, options: PartialGroup<Options, 'content', 'image'> & InnerProps) => {
   const { image, font, foreColor } = options
   const ctx = canvas.getContext('2d')
   if (!ctx) {
@@ -231,7 +216,7 @@ export default function setupWatermark(options: Options) {
     height: peHeight
   }
 
-  let canvas: HTMLCanvasElement | null = createCanvas(target, { width: peWidth, height: peHeight, opacity: allProps.opacity, type: allProps.type })
+  let canvas: HTMLCanvasElement | null = createCanvas(target, { width: peWidth, height: peHeight, type: allProps.type })
 
   let canvasObserver: MutationObserver | undefined
 
@@ -239,7 +224,7 @@ export default function setupWatermark(options: Options) {
     for (const mutation of mutationsList) {
       if (mutation.type === 'childList') {
         if (!mutation.target.contains(canvas)) {
-          canvas = createCanvas(target, { width: peWidth, height: peHeight, opacity: allProps.opacity, type: allProps.type })
+          canvas = createCanvas(target, { width: peWidth, height: peHeight, type: allProps.type })
         }
       }
     }
